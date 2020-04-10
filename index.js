@@ -5,15 +5,18 @@ const moment = require("moment");
 
 const ENDPOINT = "https://slack.com/api";
 const ALERT_CHANNEL = "admin";
+const THRESHOLD_MONTHS = 12;
 
 const userToken = process.env.USER_OAUTH_TOKEN;
 const botToken = process.env.BOT_OAUTH_TOKEN;
 const whitelist = process.env.WHITELIST.split(",");
 
 const agent = new ProxyAgent();
-checkUnusedChannels();
 
-async function checkUnusedChannels() {
+exports.handler = async (event) => {
+  console.log(event);
+  const { dryRun } = event;
+
   const current = moment();
   const channels = await getChannels();
   console.log(`Channels: ${channels.length}`);
@@ -23,13 +26,13 @@ async function checkUnusedChannels() {
     const messages = await getChannelMessages(c.id);
     const latest = messages.filter(m => !m.subtype || !m.subtype.startsWith("channel_"))[0];
     if (latest) {
-      if (current.diff(moment.unix(latest.ts), "months") >= 12) {
+      if (current.diff(moment.unix(latest.ts), "months") >= THRESHOLD_MONTHS) {
         console.log(`Unused: ${c.name} ([${latest.subtype}] ${latest.text.substr(0, 20)})`);
         c.since = moment.unix(latest.ts).format("YYYY-MM-DD");
       }
     } else {
       console.log(`No latest: ${c.name}; Created: ${moment.unix(c.created).format("YYYY-MM-DD")}`);
-      if (current.diff(moment.unix(c.created), "months") >= 12) {
+      if (current.diff(moment.unix(c.created), "months") >= THRESHOLD_MONTHS) {
         c.since = moment.unix(c.created).format("YYYY-MM-DD");
       }
     }
@@ -47,10 +50,10 @@ async function checkUnusedChannels() {
         `This channel will be archived because unsed since ${c.since}.`,
         `Please contact admin if you want this channel kept as active.`
       ];
-      return postMessage(c.id, indivisual.join("\n"));
+      return (dryRun ? true : postMessage(c.id, indivisual.join("\n")));
     }));
     console.log(summary.join("\n"));
-    await postMessage(ALERT_CHANNEL, summary.join("\n"));
+    await (dryRun ? true : postMessage(ALERT_CHANNEL, summary.join("\n")));
   }
 }
 

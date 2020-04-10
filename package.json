@@ -4,12 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node cli.js",
+    "dry": "node cli.js --dry-run",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "format": "prettier --write  \"*.js\""
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "command-line-args": "^5.1.1",
     "dotenv": "^8.2.0",
     "moment": "^2.24.0",
     "node-fetch": "^2.6.0",
